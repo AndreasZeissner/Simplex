@@ -6,15 +6,23 @@ class Simplex extends Model {
 
 	//
 
-	public function rekursiverAufruf() {
+
+
+	public function berechneSimplexTableau($simplexArray) {
 		// das Ding soll so lange laufen, bis es xWert und yWert > 0 -> alle Methoden werden so lange aufgerufen bis dies der fall ist
 		// $this->berechne Simplex
-
+		// while (($simplexArray[0]['xWert'] < 0)  || ($simplexArray[0]['yWert'] < 0)) {
+		// 	$simplexArray = $this->simplexTableau($simplexArray);
+		// }
+		do {
+			$simplexArray = $this->simplexTableau($simplexArray);
+				var_dump($simplexArray);
+		} while (($simplexArray[0]['xWert'] < 0)  && ($simplexArray[0]['yWert'] < 0)); 
+			return $simplexArray;
 	}
+	// Ermittelt die Pivot Column
 	public function getPivotColumn($simplexArray) {
-
-		if ($simplexArray[0]["xWert"] * -1 > $simplexArray[0]["yWert"] * -1) {
-			echo $simplexArray[0]["xWert"];
+		if ($simplexArray[0]["xWert"] > $simplexArray[0]["yWert"]) {
 
 			return "xWert";
 		}else{
@@ -23,29 +31,63 @@ class Simplex extends Model {
 		}
 	}
 
-	public function getPivotElement($simplexArray) {
+	public function simplexTableau($simplexArray) {
 		$pivotSpalte = $this->getPivotColumn($simplexArray);
+		// dd($pivotSpalte);
 		$pivotElement = null;
 		$pivotZeile = null;
+		$temp = $simplexArray[1]['Ergebnis']/$simplexArray[1][$pivotSpalte];
 		// Ergebnis/yWert
-		for($i = 1; $i<count($simplexArray); $i++){
-			$potentiellesPivotElement = $simplexArray[$i]["Ergebnis"]/$simplexArray[$i][$pivotSpalte]; 
-			// legt initialen Wert für Pivotelement fest
-			if ($i == 1) {
-				$pivotElement = $potentiellesPivotElement;
-			}
-			// ermittelt aktuelles Pivotelement aus jeder Spalte beschreibt es mit porentiellem 
-			// wir brauchen das kleinste positive
-			if ($potentiellesPivotElement < $pivotElement) {
-				$pivotElement = $potentiellesPivotElement;
-				$pivotZeile = $i;
+		for($i = 1; $i<count($simplexArray); $i++) {
+			echo "Pivot";
+			var_dump($pivotElement);
+			echo "Temp";
+			var_dump($temp);
+			// dd($simplexArray[$i][$pivotSpalte]); 
+			if ($simplexArray[$i][$pivotSpalte] != 0) {
+				if($temp >= $simplexArray[$i]['Ergebnis']/$simplexArray[$i][$pivotSpalte]) {
+					$pivotElement = $simplexArray[$i][$pivotSpalte];
+					$pivotZeile = $i;
+				}
 			}
 		}
+
+
+
+
+		// for($i = 1; $i<count($simplexArray); $i++){
+
+		// 	$potentiellesPivotElement = $simplexArray[$i]["Ergebnis"]/$simplexArray[$i][$pivotSpalte]; 
+		// 	// legt initialen Wert für Pivotelement fest
+
+		// 	if ($i == 1) {
+		// 		$pivotElement = $potentiellesPivotElement;
+		// 	}
+
+		// 	// ermittelt aktuelles Pivotelement aus jeder Spalte beschreibt es mit porentiellem 
+		// 	// wir brauchen das kleinste positive
+			
+		// 		if ($potentiellesPivotElement < $pivotElement) {
+		// 			$pivotElement = $simplexArray[$i][$pivotSpalte];
+		// 			echo "Pivotelement";
+		// 			var_dump($pivotElement);
+		// 			$pivotZeile = $i;
+		// 		}
+
+			
+		// }
 			//Attribute Array
-		return array($pivotZeile, $pivotSpalte, $pivotElement);
+		$attributeArray = array($pivotZeile, $pivotSpalte, $pivotElement);
+			// dd($attributeArray);
+		$simplexArray = $this->berechneUmPivotHerum($attributeArray, $simplexArray);
+		$simplexArray = $this->berechnePivotSpalte($attributeArray, $simplexArray);
+			// dd($simplexArray); // 
+		$simplexArray = $this->berechnePivotZeile($attributeArray, $simplexArray);
+		return $simplexArray;
 	}
 
 			// bekommt array aus getPivotElement
+	// Berechnet die Spalte
 	public function berechnePivotSpalte($attributeArray, $simplexArray) {
 		// Wert/pivotElement * -1
 		for($i = 0; $i<count($simplexArray); $i++){	
@@ -56,21 +98,24 @@ class Simplex extends Model {
 		return $simplexArray;
 
 	}
-
+	// Berechnet die Spalte
 	public function berechnePivotZeile($attributeArray, $simplexArray) {
-		$simplexArray = $this->berechnePivotSpalte($attributeArray, $simplexArray); 
-		//var_dump($simplexArray);
+		//$simplexArray = $this->berechnePivotSpalte($attributeArray, $simplexArray); 
+	
 		$simplexArray[$attributeArray[0]]['xWert'] = $simplexArray[$attributeArray[0]]['xWert']/$attributeArray[2];
 		$simplexArray[$attributeArray[0]]['yWert'] = $simplexArray[$attributeArray[0]]['yWert']/$attributeArray[2];
 		$simplexArray[$attributeArray[0]]['Ergebnis'] = $simplexArray[$attributeArray[0]]['Ergebnis']/$attributeArray[2];
 		// PivotElement ist Kehrwert aus pivotelement!
 		$simplexArray[$attributeArray[0]][$attributeArray[1]] = 1/$attributeArray[2];
-		dd($simplexArray);
+		// dd($simplexArray);
+			
+
+		return $simplexArray;
 	}
 
 	// a - (b*c)/d 
 	public function berechneUmPivotHerum($attributeArray, $simplexArray) {
-		// return array($pivotZeile, $pivotSpalte, $pivotElement);
+		// return array($pivotZeile, $pivotSpalte, $pivotElement);as
 		// Ausnahme: PivotZeile und PivotSpalte!
 		// d ist immer das PivotElemnt 
 		// c ist immer in der PivotZeile 
@@ -81,13 +126,19 @@ class Simplex extends Model {
 		// 
 		// if Pivotspalte == yWert {}
 		// immer gerade die berechnen, die nicht in die Spalte fallen
-		$d = $attributeArray[2]; 
-		foreach ($simplexArray as $row) {
-			echo $row['Ergebnis'];
-		}
-				// b a 
-				// d c 
-			
+		// dd($attributeArray[0]);
+			for ($i = 0; $i<count($simplexArray); $i++) {
+				if ($i != $attributeArray[0]) {
+					if ($attributeArray[1] == "xWert") {;
+						$simplexArray[$i]['Ergebnis'] = $simplexArray[$i]['Ergebnis'] - ($simplexArray[$i][$attributeArray[1]] * $simplexArray[$attributeArray[0]]['Ergebnis']) / $attributeArray[2];  
+						$simplexArray[$i]['yWert'] = $simplexArray[$i]['yWert'] -($simplexArray[$i][$attributeArray[1]] * $simplexArray[$attributeArray[0]]['yWert']) / $attributeArray[2]; 
+					} else {
+						$simplexArray[$i]['Ergebnis'] = $simplexArray[$i]['Ergebnis'] - ($simplexArray[$i][$attributeArray[1]] * $simplexArray[$attributeArray[0]]['Ergebnis']) / $attributeArray[2];  
+						$simplexArray[$i]['xWert'] = $simplexArray[$i]['xWert'] - ($simplexArray[$i][$attributeArray[1]] * $simplexArray[$attributeArray[0]]['xWert']) / $attributeArray[2]; 
+					}
+				}
+			}
+		return $simplexArray;
 			
 		}
 		
@@ -98,15 +149,5 @@ class Simplex extends Model {
 
 
 }
-
-
-	// $simplexArray = 
-	// 		array(
-	// 			array("xWert" => -210, "yWert" => -160, "Ergebnis" => -640),			
-	// 			array("xWert" => 4, "yWert" => 2, "Ergebnis" => 17),		
-	// 			array("xWert" => 2, "yWert" => 1, "Ergebnis" => 4),
-	// 			array("xWert" => 7, "yWert" => 5, "Ergebnis" => 35),
-	// 			array("xWert" => 1, "yWert" => 0, "Ergebnis" => 3),
-	// 			);
 
 
